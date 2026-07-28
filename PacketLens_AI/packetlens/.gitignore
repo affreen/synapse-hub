@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+*.pcapng

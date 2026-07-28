@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PacketLens — packet capture analysis</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <h1>Packet<span>Lens</span></h1>
+  <div class="toolbar">
+    <input type="text" id="filter-input" placeholder="Search, e.g. tcp, ping, webpage, ip==10.0.0.5" />
+    <button id="btn-upload">Open capture…</button>
+    <input type="file" id="file-input" accept=".pcap" />
+    <button id="btn-sample">Load sample</button>
+    <button id="btn-live">▶ Start live (demo)</button>
+    <span class="status-pill" id="status-pill">idle</span>
+  </div>
+  <div class="lang-toggle" id="lang-toggle" role="group" aria-label="Explanation style">
+    <button id="btn-plain" class="lang-btn active" title="Show packets in everyday language">🗣 Plain English</button>
+    <button id="btn-technical" class="lang-btn" title="Show raw protocol fields, the way Wireshark does">⚙ Technical</button>
+  </div>
+  <span class="status-pill ai-pill" id="ai-status-pill" title="Whether explanations are AI-generated (Claude API) or offline templates">🤖 checking…</span>
+</header>
+
+<main>
+  <div id="packet-table-wrap">
+    <table id="packet-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Time</th>
+          <th>Source</th>
+          <th>Destination</th>
+          <th>Protocol</th>
+          <th>Length</th>
+          <th>Info</th>
+        </tr>
+      </thead>
+      <tbody id="packet-tbody">
+        <tr><td colspan="7" class="empty-hint">Load the sample capture, upload a .pcap file, or start live (demo) mode to begin.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="detail-panel">
+    <div class="empty-hint">Select a packet to see what it means, plus the full technical breakdown.</div>
+  </div>
+
+  <div id="sidebar">
+    <h2>What's happening</h2>
+    <div id="narrative-box" class="narrative-box empty-hint">Load a capture to see a plain-English summary here.</div>
+
+    <h2>Capture summary</h2>
+    <div id="summary-stats">
+      <div class="stat-row"><span>Packets</span><span id="stat-count">0</span></div>
+      <div class="stat-row"><span>Bytes</span><span id="stat-bytes">0</span></div>
+    </div>
+
+    <h2>Protocol distribution</h2>
+    <div id="proto-chart"></div>
+
+    <h2>Top conversations</h2>
+    <div id="conversations-list" class="empty-hint" style="padding:10px 0;">—</div>
+  </div>
+</main>
+
+<footer id="status-bar"></footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# PacketLens has no third-party dependencies.
+# backend/, agent/, and tests/ use only the Python 3 standard library
+# (http.server, struct, socket, subprocess, unittest, ...).
+#
+# This file is intentionally empty of packages so PyCharm's
+# "Install requirements" prompt has nothing to install — it's here mainly
+# so PyCharm recognizes the project as a Python project with a
+# requirements file, and as a place to add packages later (e.g. fastapi)
+# if the backend grows beyond the stdlib prototype.
