@@ -27,8 +27,7 @@ import urllib.error
 
 API_URL = "https://api.anthropic.com/v1/messages"
 API_VERSION = "2023-06-01"
-DEFAULT_MODEL = (""
-                 "")
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 # How many packets to ask Claude to explain in a single request, for batch
 # (offline-capture) mode. Keeps prompts/responses a reasonable size even for

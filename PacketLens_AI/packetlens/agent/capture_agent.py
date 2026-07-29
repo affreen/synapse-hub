@@ -43,6 +43,7 @@ import argparse
 import json
 import os
 import shutil
+import socket
 import struct
 import subprocess
 import sys
@@ -50,6 +51,23 @@ import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 import pcap_parser  # noqa: E402
+
+
+def get_local_ip():
+    """Best-effort detection of this machine's primary IPv4 address (the
+    one used to reach the outside world), by opening a UDP socket toward a
+    public address without sending any data. Returns None if detection
+    fails (e.g. no network available) -- purely informational, capture
+    itself doesn't depend on it."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+        finally:
+            s.close()
+    except OSError:
+        return None
 
 
 def _detect_tool(preferred=None):
@@ -129,6 +147,8 @@ def run_capture(iface, backend_url, count, tool=None):
         return
 
     cmd = _build_command(chosen, iface, count)
+    local_ip = get_local_ip()
+    print("[agent] this machine's IP: %s" % (local_ip or "unknown (no network?)"))
     print("[agent] starting: %s" % " ".join(cmd))
     print("[agent] streaming dissected packets to %s/api/live/ingest" % backend_url)
 

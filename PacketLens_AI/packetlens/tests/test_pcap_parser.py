@@ -18,8 +18,10 @@ import unittest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "backend"))
+sys.path.insert(0, PROJECT_ROOT)
 
 import pcap_parser  # noqa: E402
+import make_sample_pcap  # noqa: E402 -- source of truth for sample.pcap's addresses
 
 SAMPLE_PCAP = os.path.join(PROJECT_ROOT, "sample.pcap")
 
@@ -123,8 +125,8 @@ class TestPcapParser(unittest.TestCase):
         packets, _meta = pcap_parser.parse_pcap_bytes(data)
         arp_request = packets[0]["layers"]["arp"]
         self.assertEqual(arp_request["opcode"], "Request")
-        self.assertEqual(arp_request["sender_ip"], "192.168.1.50")
-        self.assertEqual(arp_request["target_ip"], "192.168.1.1")
+        self.assertEqual(arp_request["sender_ip"], make_sample_pcap.IP_HOST)
+        self.assertEqual(arp_request["target_ip"], make_sample_pcap.IP_ROUTER)
 
     def test_icmp_dissection(self):
         with open(SAMPLE_PCAP, "rb") as f:

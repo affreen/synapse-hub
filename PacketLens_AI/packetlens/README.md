@@ -120,8 +120,10 @@ and the live Claude API calls):
    Info column should switch between everyday sentences and raw protocol
    fields (e.g. `[SYN,ACK] Seq=5000 Ack=1001 Win=64240`).
 7. Type into the search box — try `tcp`, `arp`, `ping`, `webpage`, or
-   `ip==192.168.1.50` — the table should narrow to matching rows (plain-English
-   text is searchable too, not just protocol jargon).
+   `ip==` followed by the host IP printed when the sample was generated
+   (see `make_sample_pcap.py`'s output) — the table should narrow to
+   matching rows (plain-English text is searchable too, not just protocol
+   jargon).
 8. Click **Open capture…** and pick any real classic-format `.pcap` file
    (e.g. exported from Wireshark via *File → Save As → Wireshark/tcpdump…
    pcap*) to confirm upload+parse works on real captures, not just the demo

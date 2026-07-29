@@ -73,9 +73,25 @@ def arp_packet(opcode, sender_mac, sender_ip, target_mac, target_ip):
         mac_bytes(target_mac) + ip_bytes(target_ip)
 
 
+def get_local_ip():
+    """Best-effort detection of this machine's primary IPv4 address (the
+    one used to reach the outside world), by opening a UDP socket toward a
+    public address without sending any data. Falls back to a fixed LAN
+    address if detection fails (e.g. no network available)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+        finally:
+            s.close()
+    except OSError:
+        return "192.168.1.50"
+
+
 MAC_HOST = "02:11:22:33:44:55"
 MAC_ROUTER = "02:aa:bb:cc:dd:ee"
-IP_HOST = "192.168.1.50"
+IP_HOST = get_local_ip()
 IP_ROUTER = "192.168.1.1"
 IP_SERVER = "93.184.216.34"  # example.com-ish
 IP_DNS = "8.8.8.8"
@@ -169,4 +185,4 @@ def write_pcap(frames, path):
 if __name__ == "__main__":
     frames = build_frames()
     write_pcap(frames, OUT_PATH)
-    print("wrote %d packets to %s" % (len(frames), OUT_PATH))
+    print("wrote %d packets to %s (host IP: %s)" % (len(frames), OUT_PATH, IP_HOST))
