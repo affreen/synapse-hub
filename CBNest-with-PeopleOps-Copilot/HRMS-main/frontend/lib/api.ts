@@ -1471,6 +1471,9 @@ export type AiObservabilityTotals = {
   total_input_tokens: number;
   total_output_tokens: number;
   total_llm_calls: number;
+  failed_permission_attempts: number;
+  sql_blocked_query_count: number;
+  rag_no_answer_rate_pct: number | null;
 };
 
 export type AiObservabilityIntentRow = {

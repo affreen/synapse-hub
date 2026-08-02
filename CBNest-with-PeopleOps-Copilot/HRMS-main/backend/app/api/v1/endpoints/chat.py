@@ -19,6 +19,27 @@ from app.services.ai import action_agent, audit, policy_rag, router_agent, sql_a
 router = APIRouter()
 logger = structlog.get_logger("ai.chat")
 
+# refusal_reason codes that mean "this user/role wasn't allowed to see or do
+# this", as opposed to a structurally-invalid request. Sourced from
+# services/ai/action_agent.py (PERMISSION_DENIED) and the role-scope check in
+# services/ai/sql_agent.py (ROLE_SCOPE_VIOLATION) — kept separate from
+# SQL_BLOCKED_REFUSAL_REASONS below, which is what sql_guardrails.validate_sql
+# itself rejects regardless of role.
+PERMISSION_REFUSAL_REASONS = {"PERMISSION_DENIED", "ROLE_SCOPE_VIOLATION"}
+
+# refusal_reason codes produced by services/ai/sql_guardrails.validate_sql —
+# a generated query rejected by the guardrail layer (destructive/multi-statement/
+# non-SELECT/forbidden-column/etc.), independent of who asked.
+SQL_BLOCKED_REFUSAL_REASONS = {
+    "FORBIDDEN_COLUMN",
+    "BLOCKED_KEYWORD",
+    "NOT_SELECT",
+    "MULTIPLE_STATEMENTS",
+    "EMPTY_SQL",
+    "DISALLOWED_SYNTAX",
+    "DISALLOWED_TABLE",
+}
+
 
 def _pop_llm_usage(result: dict) -> dict:
     """Strips the internal `_llm_usage` key (summarized token/latency data
@@ -321,6 +342,22 @@ async def chat_observability(
         )
     ).all()
 
+    # Derived headline metrics — computed from queries already run above
+    # (by_intent, by_refusal_reason) rather than issuing new round trips,
+    # except for the one count that isn't broken out anywhere yet.
+    failed_permission_attempts = sum(count for reason, count in by_refusal_reason if reason in PERMISSION_REFUSAL_REASONS)
+    sql_blocked_query_count = sum(count for reason, count in by_refusal_reason if reason in SQL_BLOCKED_REFUSAL_REASONS)
+
+    policy_no_answer_count = (
+        await db.execute(
+            select(func.count(AIAuditLog.id)).where(
+                where_clause, AIAuditLog.intent == "POLICY_QA", AIAuditLog.action_status == "NO_ANSWER"
+            )
+        )
+    ).scalar() or 0
+    policy_total = next((count for intent, count, *_ in by_intent if intent == "POLICY_QA"), 0)
+    rag_no_answer_rate_pct = round(100 * policy_no_answer_count / policy_total, 1) if policy_total else None
+
     daily_bucket = func.date(AIAuditLog.created_at)
     daily = (
         await db.execute(
@@ -347,6 +384,9 @@ async def chat_observability(
                 "total_input_tokens": total_input_tokens or 0,
                 "total_output_tokens": total_output_tokens or 0,
                 "total_llm_calls": total_llm_calls or 0,
+                "failed_permission_attempts": failed_permission_attempts,
+                "sql_blocked_query_count": sql_blocked_query_count,
+                "rag_no_answer_rate_pct": rag_no_answer_rate_pct,
             },
             "by_intent": [
                 {

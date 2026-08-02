@@ -175,6 +175,24 @@ export default function AiObservabilityPage() {
                 <StatTile label="Output tokens" value={formatCompact(data.totals.total_output_tokens)} />
               </div>
 
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <StatTile
+                  label="Failed permission attempts"
+                  value={formatCompact(data.totals.failed_permission_attempts)}
+                  sublabel="Role-scope or permission-denied refusals"
+                />
+                <StatTile
+                  label="SQL blocked-query count"
+                  value={formatCompact(data.totals.sql_blocked_query_count)}
+                  sublabel="Destructive/forbidden-column/invalid queries rejected"
+                />
+                <StatTile
+                  label="RAG no-answer rate"
+                  value={data.totals.rag_no_answer_rate_pct === null ? "—" : `${data.totals.rag_no_answer_rate_pct}%`}
+                  sublabel="Policy questions with no confident answer"
+                />
+              </div>
+
               <DailyVolumeChart data={data.daily.map((d) => ({ date: d.date, count: d.count }))} />
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
