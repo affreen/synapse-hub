@@ -49,7 +49,7 @@ export default function AICopilotPage() {
 
   return (
     <main className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar role={role} />
       <section className="flex w-full flex-col">
         <Topbar name={name} title="PeopleOps Copilot" />
         <div className="space-y-4 p-6">

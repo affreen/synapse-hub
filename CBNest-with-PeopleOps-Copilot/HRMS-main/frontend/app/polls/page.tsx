@@ -110,7 +110,7 @@ export default function PollsPage() {
 
   return (
     <main className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar role={role} />
       <section className="flex w-full flex-col">
         <Topbar name={name} title="Polls" />
         <div className="space-y-4 p-6">

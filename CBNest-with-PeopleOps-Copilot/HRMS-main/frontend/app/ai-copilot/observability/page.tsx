@@ -114,7 +114,7 @@ export default function AiObservabilityPage() {
   if (ready && role !== "ADMIN") {
     return (
       <main className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar role={role} />
         <section className="flex w-full flex-col">
           <Topbar name={name} title="AI Observability" />
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
@@ -130,7 +130,7 @@ export default function AiObservabilityPage() {
 
   return (
     <main className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar role={role} />
       <section className="flex w-full flex-col">
         <Topbar name={name} title="AI Observability" />
         <div className="space-y-4 p-6">

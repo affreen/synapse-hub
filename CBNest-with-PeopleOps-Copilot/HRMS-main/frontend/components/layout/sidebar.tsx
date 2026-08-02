@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Sparkles, label: "AI Copilot", href: "/ai-copilot" },
-  { icon: ActivitySquare, label: "AI Observability", href: "/ai-copilot/observability" },
+  { icon: ActivitySquare, label: "AI Observability", href: "/ai-copilot/observability", adminOnly: true },
   { icon: Users, label: "Employees", href: "/employees" },
   { icon: UserCircle2, label: "My Profile", href: "/me" },
   { icon: FileText, label: "My Documents", href: "/me/documents" },
@@ -23,13 +23,18 @@ const navItems = [
   { icon: Ticket, label: "Tickets", href: "/tickets" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ role }: { role?: string } = {}) {
   const pathname = usePathname();
+
+  // adminOnly items (e.g. AI Observability) default to hidden when role is
+  // unknown — a page that hasn't wired role through gets a shorter sidebar
+  // rather than risking a non-admin seeing a link to an admin-only page.
+  const visibleItems = navItems.filter((item) => !item.adminOnly || role === "ADMIN");
 
   // Pick the single most specific matching href (longest match) so nested
   // routes like /ai-copilot/observability don't also light up their parent
   // /ai-copilot entry.
-  const activeHref = navItems
+  const activeHref = visibleItems
     .filter((item) => item.href !== "#" && pathname.startsWith(item.href))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
@@ -48,7 +53,7 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="space-y-1 px-3 py-4">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = item.href === activeHref;
           return (
             <Link

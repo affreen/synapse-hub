@@ -99,7 +99,7 @@ export default function AnnouncementsPage() {
 
   return (
     <main className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar role={role} />
       <section className="flex w-full flex-col">
         <Topbar name={name} title="Announcements" />
         <div className="space-y-4 p-6">
