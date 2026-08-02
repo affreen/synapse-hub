@@ -121,7 +121,7 @@ CB Nest uses three roles with a clear permission hierarchy:
 ## 5. Project Structure
 
 ```
-HRMS/
+HRMS-main/
 ├── backend/                      # FastAPI Application
 │   ├── app/
 │   │   ├── api/v1/endpoints/     # Route handlers (14 files)
@@ -380,7 +380,7 @@ The `hr_policies` table includes an `embedding` field (JSON) ready for vector st
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd HRMS
+cd HRMS-main
 
 # 2. Copy environment file
 cp backend/.env.example backend/.env

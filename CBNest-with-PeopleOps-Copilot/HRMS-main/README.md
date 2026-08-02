@@ -108,7 +108,7 @@ First-time setup:
 
 ```bash
 git clone <repo-url>
-cd HRMS
+cd HRMS-main
 cp backend/.env.example backend/.env
 ```
 

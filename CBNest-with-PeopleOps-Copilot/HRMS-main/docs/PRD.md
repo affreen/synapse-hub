@@ -235,7 +235,7 @@ Full column-level definition (types + constraints): `db_tables_samples.md`
 
 1. Clone and configure env:
 
-   `git clone <repo-url> && cd HRMS`
+   `git clone <repo-url> && cd HRMS-main`
 
    `cp backend/.env.example backend/.env` (or PowerShell equivalent)
 
