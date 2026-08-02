@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { Badge } from "@/components/ui/badge";
 import { ChatPanel } from "@/components/ai/chat-panel";
+import { ROLE_COPILOT } from "@/components/ai/copilot-quick-actions";
 import { fetchProfile } from "@/lib/api";
 
 export default function AICopilotPage() {
@@ -53,12 +54,12 @@ export default function AICopilotPage() {
         <Topbar name={name} title="PeopleOps Copilot" />
         <div className="space-y-4 p-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold">NovaWorks PeopleOps Copilot</h1>
+            <h1 className="text-lg font-semibold">{(ROLE_COPILOT[role] ?? ROLE_COPILOT.EMPLOYEE).title}</h1>
             <Badge className="bg-indigo-100 text-indigo-700">{role}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Ask HR policy questions, look up people &amp; project data, or automate HR tasks like leave requests
-            and tickets — all scoped to what your role is allowed to see and do.
+            Part of the NovaWorks PeopleOps Copilot suite. Ask HR policy questions, look up people &amp; project
+            data, or automate HR tasks — all scoped to what your role is allowed to see and do.
           </p>
 
           {ready && token ? (

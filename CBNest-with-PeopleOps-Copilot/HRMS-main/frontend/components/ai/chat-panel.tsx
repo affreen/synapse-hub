@@ -16,6 +16,7 @@ import {
 import { SourceList } from "./source-list";
 import { SqlResultTable } from "./sql-result-table";
 import { ActionResultCard } from "./action-result-card";
+import { CopilotQuickActions } from "./copilot-quick-actions";
 
 type Mode = "policy" | "sql" | "action";
 
@@ -136,8 +137,17 @@ export function ChatPanel({ token, role, name }: { token: string; role: string; 
       {/* Message history */}
       <div className="flex-1 overflow-y-auto bg-muted/30 px-4 py-4">
         {messages.length === 0 && (
-          <div className="mt-10 text-center text-sm text-muted-foreground">
-            Hi {name.split(" ")[0]}, ask me anything about HR.
+          <div className="mt-6 space-y-6">
+            <p className="text-center text-sm text-muted-foreground">
+              Hi {name.split(" ")[0]}, ask me anything about HR.
+            </p>
+            <CopilotQuickActions
+              role={role}
+              onPick={(pickedMode, prompt) => {
+                setMode(pickedMode);
+                setInput(prompt);
+              }}
+            />
           </div>
         )}
         <div className="space-y-3">
