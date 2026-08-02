@@ -185,6 +185,24 @@ In the app: **Sidebar → AI Copilot** (`/ai-copilot`), with three tabs matching
 
 Full details: [`docs/ai_architecture.md`](docs/ai_architecture.md), [`docs/ai_permissions_matrix.md`](docs/ai_permissions_matrix.md), [`docs/ai_eval_results.md`](docs/ai_eval_results.md).
 
+### Running the Evals
+
+The formal eval set for the AI assistant lives in [`backend/evals/eval_set.json`](backend/evals/eval_set.json) — 23 structured cases (`input`, `role`, `expected_route`, `expected_behavior`) covering Policy RAG, SQL Agent, and HR Action Agent, including the security/refusal suite from `docs/ai_eval_results.md`. Schema details: [`backend/evals/README.md`](backend/evals/README.md).
+
+`backend/scripts/eval_live.py` runs these prompts against the **real, running API and a real Claude model** (costs tokens; a few prompts genuinely mutate data — leave requests, tickets, approvals). Prerequisites: stack up, migrated, seeded, and policies indexed (see [Setup](#setup) above), plus `ANTHROPIC_API_KEY` set in `backend/.env`.
+
+```bash
+docker-compose exec api python -m scripts.eval_live
+```
+
+It prints a `[PASS]`/`[FAIL]` line per case and a final summary, and exits non-zero if anything failed.
+
+For fast, free, deterministic checks that don't need an API key or a running stack, use the mocked pytest suite instead:
+
+```bash
+docker-compose exec api pytest
+```
+
 ## Configuration
 
 Backend environment file: `backend/.env`
@@ -231,6 +249,12 @@ Index/re-index HR policies for the AI Policy Assistant:
 
 ```bash
 docker-compose exec api python -m scripts.ingest_policies
+```
+
+Run the AI assistant's formal eval set live (costs tokens; see [Running the Evals](#running-the-evals)):
+
+```bash
+docker-compose exec api python -m scripts.eval_live
 ```
 
 Optional one-time migration (legacy payslip files to DOB-password-protected PDFs):
