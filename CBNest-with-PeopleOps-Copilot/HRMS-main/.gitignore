@@ -29,11 +29,6 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Keep only PRD markdown in repo root
-*.md
-!PRD.md
-!SOFTWARE_ENGINEER_LEARNER_GUIDE.md
-
 # Local runtime/build artifacts
 frontend/.next/
 backend/storage/hrms.db
