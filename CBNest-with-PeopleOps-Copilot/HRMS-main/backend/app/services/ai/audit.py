@@ -16,6 +16,25 @@ from app.models.ai_audit_log import AIAuditLog
 MAX_MESSAGE_LEN = 1000
 
 
+def pop_llm_usage(result: dict) -> dict:
+    """Strips the internal `_llm_usage` key (summarized token/latency data
+    from llm_client.summarize_usage) off an agent's result dict before it's
+    sent to the client, returning it separately for the audit log."""
+    usage = result.pop("_llm_usage", None) or {}
+    return {
+        "input_tokens": usage.get("input_tokens"),
+        "output_tokens": usage.get("output_tokens"),
+        "llm_call_count": usage.get("llm_call_count"),
+    }
+
+
+def pop_refusal_reason(result: dict) -> str | None:
+    """Strips the internal `_refusal_reason` guardrail code off an agent's
+    result dict before it's sent to the client, returning it for the audit
+    log and observability dashboard."""
+    return result.pop("_refusal_reason", None)
+
+
 async def write_audit_log(
     db: AsyncSession,
     user_id: int,

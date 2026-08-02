@@ -158,8 +158,9 @@ An AI layer sits alongside the existing HRMS backend/frontend without touching i
 | `POST /api/v1/chat/sql` | SQL Agent | Turns a question into a single read-only `SELECT`, validated and role-scoped, over employees/projects/skills/leave/tickets |
 | `POST /api/v1/chat/actions` | HR Action Agent | Performs leave requests, approvals, tickets, announcements, and project assignments by calling the **existing** REST endpoints as tools (never writes to the DB directly) |
 | `POST /api/v1/chat/router` | Router (optional) | Classifies a message into `POLICY_QA` / `SQL_QUERY` / `HR_ACTION` / `UNKNOWN` |
+| `POST /api/v1/chat/graph` | LangGraph orchestrator | Single auto-routed entry point — classifies intent and runs the matching agent through a LangGraph pipeline (load context → classify → route → agent → permission check → response → audit log). No dedicated UI yet; see [`docs/ai_architecture.md`](docs/ai_architecture.md#7-langgraph-orchestration-postchatgraph) |
 
-In the app: **Sidebar → AI Copilot** (`/ai-copilot`), with three tabs matching the three agents above.
+In the app: **Sidebar → AI Copilot** (`/ai-copilot`), with three tabs matching the three mode-tab-driven agents above (`/chat/graph` is reachable directly, no tab yet).
 
 ### Setup
 

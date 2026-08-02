@@ -14,7 +14,7 @@ from app.models.employee import Employee
 from app.models.enums import Role
 from app.schemas.chat import ChatMessageCreate, ChatRequest, ChatSessionCreate
 from app.services.auth import get_current_user, oauth2_scheme, require_roles
-from app.services.ai import action_agent, audit, policy_rag, router_agent, sql_agent
+from app.services.ai import action_agent, audit, graph, policy_rag, router_agent, sql_agent
 
 router = APIRouter()
 logger = structlog.get_logger("ai.chat")
@@ -41,23 +41,6 @@ SQL_BLOCKED_REFUSAL_REASONS = {
 }
 
 
-def _pop_llm_usage(result: dict) -> dict:
-    """Strips the internal `_llm_usage` key (summarized token/latency data
-    from llm_client.summarize_usage) off an agent's result dict before it's
-    sent to the client, returning it separately for the audit log."""
-    usage = result.pop("_llm_usage", None) or {}
-    return {
-        "input_tokens": usage.get("input_tokens"),
-        "output_tokens": usage.get("output_tokens"),
-        "llm_call_count": usage.get("llm_call_count"),
-    }
-
-
-def _pop_refusal_reason(result: dict) -> str | None:
-    """Strips the internal `_refusal_reason` guardrail code off an agent's
-    result dict before it's sent to the client, returning it for the audit
-    log and observability dashboard."""
-    return result.pop("_refusal_reason", None)
 
 
 @router.post("/sessions")
@@ -103,7 +86,7 @@ async def chat_policy(
     try:
         result = await policy_rag.answer_policy_question(db, payload.message)
         status_ = "SUCCESS" if result["sources"] else "NO_ANSWER"
-        usage = _pop_llm_usage(result)
+        usage = audit.pop_llm_usage(result)
         duration_ms = round((time.perf_counter() - started) * 1000, 1)
         await audit.write_audit_log(
             db,
@@ -147,8 +130,8 @@ async def chat_sql(
     try:
         result = await sql_agent.generate_and_run_sql(db, payload.message, current_user.id, current_user.role.value)
         status_ = "SUCCESS" if result.get("sql") else "REFUSED"
-        usage = _pop_llm_usage(result)
-        refusal_reason = _pop_refusal_reason(result)
+        usage = audit.pop_llm_usage(result)
+        refusal_reason = audit.pop_refusal_reason(result)
         duration_ms = round((time.perf_counter() - started) * 1000, 1)
         await audit.write_audit_log(
             db,
@@ -201,8 +184,8 @@ async def chat_actions(
             role=current_user.role.value,
             access_token=access_token,
         )
-        usage = _pop_llm_usage(result)
-        refusal_reason = _pop_refusal_reason(result)
+        usage = audit.pop_llm_usage(result)
+        refusal_reason = audit.pop_refusal_reason(result)
         duration_ms = round((time.perf_counter() - started) * 1000, 1)
         await audit.write_audit_log(
             db,
@@ -235,6 +218,43 @@ async def chat_actions(
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=error_response("ACTION_ASSISTANT_UNAVAILABLE", "The action assistant is temporarily unavailable."),
+        )
+
+
+@router.post("/graph")
+async def chat_graph(
+    payload: ChatRequest,
+    current_user: Employee = Depends(get_current_user),
+    access_token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    """Unified entry point running the LangGraph pipeline (see
+    services/ai/graph.py): load user context -> classify intent -> route to
+    Policy RAG / SQL Agent / HR Action Agent -> permission check -> generate
+    response -> audit log. Additive to /chat/policy, /chat/sql, /chat/actions
+    (which stay mode-tab-driven) - this is the auto-routed alternative."""
+    try:
+        result = await graph.run_graph(
+            db=db,
+            message=payload.message,
+            pending_action=payload.pending_action,
+            user_id=current_user.id,
+            role=current_user.role.value,
+            access_token=access_token,
+        )
+        return success_response(result)
+    except Exception as exc:
+        await audit.write_audit_log(
+            db, user_id=current_user.id, role=current_user.role.value, message=payload.message,
+            intent="GRAPH", tool_name=None, action_status="ERROR",
+        )
+        logger.error(
+            "chat_graph_failed", user_id=current_user.id, role=current_user.role.value,
+            error_type=type(exc).__name__,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=error_response("GRAPH_ASSISTANT_UNAVAILABLE", "The unified assistant is temporarily unavailable."),
         )
 
 

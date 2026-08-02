@@ -17,9 +17,10 @@ backend/app/services/ai/
   permissions.py             # AI tool permission matrix (code form of docs/ai_permissions_matrix.md)
   api_tools.py                # HTTP wrappers around the app's OWN REST API
   action_agent.py               # intent extraction, permission check, confirmation, tool execution
-  router_agent.py                # optional intent classifier
+  router_agent.py                # intent classifier (used standalone by /router, and inside graph.py)
+  graph.py                        # LangGraph orchestration for POST /chat/graph
   audit.py                        # writes ai_audit_logs
-backend/app/api/v1/endpoints/chat.py   # extended (not replaced) with /policy /sql /actions /router
+backend/app/api/v1/endpoints/chat.py   # extended (not replaced) with /policy /sql /actions /router /graph
 backend/scripts/ingest_policies.py     # one-off/re-run indexing script
 frontend/app/ai-copilot/page.tsx       # new page
 frontend/components/ai/*               # chat panel + sub-components
@@ -40,6 +41,8 @@ User message (Next.js /ai-copilot)
    -> ai_audit_logs row written (success, refusal, or error)
    -> JSON response: {"success", "data", "error"} (matches this app's existing response envelope)
 ```
+
+The three endpoints above are mode-tab-driven — the frontend already knows which agent to call. `POST /api/v1/chat/graph` (§7) is the auto-routed alternative: one endpoint, intent classified automatically, for a free-form chat experience instead of explicit mode tabs.
 
 ## 3. Critical architecture rule: agents never write to the DB
 
@@ -90,11 +93,28 @@ Result rows are passed through `strip_forbidden_fields` as a second, independent
 
 Permission checks happen **before** a confirmation prompt is ever shown, so an unauthorized user never even sees a preview of an action they can't perform.
 
-## 7. Auditability
+## 7. LangGraph orchestration (`POST /chat/graph`)
+
+Additive, not a replacement: `/chat/policy`, `/chat/sql`, `/chat/actions` are untouched. `services/ai/graph.py` builds a `langgraph.graph.StateGraph` with one node per step of the requested pipeline:
+
+```
+START -> load_user_context -> classify_intent -> route ->
+  { policy_rag_node | sql_agent_node | hr_action_node | unhandled_node } ->
+  permission_check -> generate_final_response -> audit_log -> END
+```
+
+- **load_user_context** re-fetches the `Employee` row from the DB by `user_id`, rather than trusting only the role baked into the caller's JWT — keeps the graph correct even against a stale-but-still-valid token.
+- **classify_intent** calls `router_agent.classify_intent` (the same classifier `/chat/router` already exposed standalone, previously unused by the actual chat flow — this is now its first real caller). A `pending_action` reply always short-circuits straight to `HR_ACTION` without re-classifying.
+- **route** dispatches to whichever of the three existing agents matches the classified intent, calling `policy_rag.answer_policy_question` / `sql_agent.generate_and_run_sql` / `action_agent.handle_action_request` directly — no agent logic is duplicated or reimplemented here.
+- **permission_check** is a defense-in-depth checkpoint, not a second independent permission system: it re-verifies `permissions.is_tool_permitted` for whatever `tool_called` the HR Action Agent returned, using the exact same function the agent already checked internally. If a bug ever let an unpermitted `tool_called` through with a success status, this node catches it and downgrades the result to a refusal before it reaches the response or the audit log.
+- **generate_final_response** normalizes the three agents' differently-shaped results (`sources` vs `sql`/`rows` vs `tool_called`/`action_status`) into one response envelope.
+- **audit_log** writes the same `ai_audit_logs` row shape the three existing endpoints write — `intent`/`tool_name`/`action_status` are derived identically, so the observability dashboard (§ below) behaves the same regardless of which endpoint a request came through.
+
+## 8. Auditability
 
 Every `/chat/*` call — success, refusal, or error — writes one `ai_audit_logs` row: user id, role, original message (truncated to 1000 chars), detected intent, tool/agent used, action status, and any record ids touched. Never logged: JWTs/access tokens, passwords, bank/PAN fields, or raw payroll numbers.
 
-## 8. Security decisions summary
+## 9. Security decisions summary
 
 | Risk | Mitigation |
 |---|---|
@@ -107,9 +127,10 @@ Every `/chat/*` call — success, refusal, or error — writes one `ai_audit_log
 | Direct DB mutation by the agent | Architecturally impossible — `api_tools.py` only makes HTTP calls to existing endpoints |
 | Silent failures | Every failure path returns a graceful, non-leaking message and is still audit-logged |
 
-## 9. Known limitations
+## 10. Known limitations
 
 - TF-IDF embeddings are keyword-based, not semantic — a paraphrased question with no shared vocabulary may retrieve nothing. Acceptable for a closed policy corpus; would need a real embedding model at larger/more varied scale.
 - MANAGER-level SQL scoping is heuristic (see §5).
-- The confirmation flow is stateless (the frontend must echo back `pending_action`), not stored server-side — acceptable for a chat UI, but wouldn't survive a page reload mid-confirmation.
+- The confirmation flow is stateless (the frontend must echo back `pending_action`), not stored server-side — acceptable for a chat UI, but wouldn't survive a page reload mid-confirmation. `/chat/graph` inherits this same behavior.
 - No streaming responses (see assignment Bonus #3) — out of scope for this pass.
+- `/chat/graph` has no frontend UI yet — it's reachable directly (see §7), but the `/ai-copilot` chat panel still calls `/chat/policy` / `/chat/sql` / `/chat/actions` per its mode tabs.

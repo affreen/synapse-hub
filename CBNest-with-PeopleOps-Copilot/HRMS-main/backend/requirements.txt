@@ -20,6 +20,7 @@ anthropic==0.34.2
 numpy==1.26.4
 sqlparse==0.5.1
 httpx==0.27.2
+langgraph==0.2.60
 
 # --- Testing ---
 pytest==8.3.3

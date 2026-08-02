@@ -14,9 +14,11 @@ Return ONLY JSON: {"intent": "POLICY_QA|SQL_QUERY|HR_ACTION|UNKNOWN", "confidenc
 """
 
 
-async def classify_intent(message: str) -> dict:
+async def classify_intent(message: str, usage_sink: list[dict] | None = None) -> dict:
     try:
-        result = await asyncio.to_thread(llm_client.complete_json, ROUTER_SYSTEM_PROMPT, f"Message: {message}", 200)
+        result = await asyncio.to_thread(
+            llm_client.complete_json, ROUTER_SYSTEM_PROMPT, f"Message: {message}", 200, usage_sink
+        )
         result.setdefault("intent", "UNKNOWN")
         result.setdefault("confidence", 0.5)
         result.setdefault("reason", "")

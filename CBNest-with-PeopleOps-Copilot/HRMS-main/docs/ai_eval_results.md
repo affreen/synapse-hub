@@ -88,5 +88,5 @@ Pass condition: 1–2 execute directly; 3–5 pause for confirmation and only mu
 
 ## 6. What's not covered by this pass
 
-- No automated test suite (pytest) was added for the AI layer — the table above is a manual verification checklist, not executed CI. Adding `backend/tests/test_ai_*.py` with a mocked Claude client would be the natural next step.
-- LangGraph orchestration, streaming responses, and an AI usage dashboard (assignment bonuses) were not implemented — out of scope for this pass.
+- Streaming responses were not implemented — out of scope for this pass.
+- An automated pytest suite for the AI layer (mocked Claude client) and a LangGraph-orchestrated entry point (`POST /api/v1/chat/graph`, see `backend/app/services/ai/graph.py`) were later added — see `backend/tests/` and [`docs/ai_architecture.md`](ai_architecture.md).
