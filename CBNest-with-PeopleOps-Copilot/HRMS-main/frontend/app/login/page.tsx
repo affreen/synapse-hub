@@ -17,6 +17,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const extractErrorMessage = (body: unknown, fallback: string) => {
+    if (!body || typeof body !== "object") return fallback;
+    const record = body as Record<string, unknown>;
+    const detail = record.detail;
+    if (typeof detail === "string") return detail;
+    if (detail && typeof detail === "object") {
+      const detailRecord = detail as Record<string, unknown>;
+      if (
+        detailRecord.error &&
+        typeof detailRecord.error === "object" &&
+        typeof (detailRecord.error as Record<string, unknown>).message === "string"
+      ) {
+        return (detailRecord.error as Record<string, unknown>).message as string;
+      }
+      if (typeof detailRecord.message === "string") return detailRecord.message;
+    }
+    return fallback;
+  };
+
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
@@ -24,8 +43,8 @@ export default function LoginPage() {
 
     try {
       const result = await login(email, password);
-      if (!result.success) {
-        setError(result.error?.message || "Login failed");
+      if (!("success" in result) || !result.success) {
+        setError(extractErrorMessage(result, "Login failed"));
         return;
       }
 

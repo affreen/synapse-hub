@@ -1,14 +1,18 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
-export type LoginResponse = {
-  success: boolean;
-  data: {
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
-  };
-  error: { code: string; message: string } | null;
-};
+// FastAPI wraps HTTPException(detail=...) as {"detail": <detail>} — only the
+// success path returns the {success, data, error} envelope at the top
+// level. login() returns the raw parsed body, so callers must check for
+// "success" before assuming this shape (see extractErrorMessage() in
+// app/login/page.tsx, matching the pattern already used by every other
+// page that reads a possible-error response body).
+export type LoginResponse =
+  | {
+      success: true;
+      data: { access_token: string; refresh_token: string; token_type: string };
+      error: null;
+    }
+  | { detail: { success: false; data: null; error: { code: string; message: string } } };
 
 export type Employee = {
   id: number;
